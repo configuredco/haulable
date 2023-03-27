@@ -1,0 +1,50 @@
+{
+    "name": "configuredco/haulable",
+    "description": "Create standalone PHP CLI applications with PHP Micro CLI",
+    "keywords": ["framework", "laravel", "laravel zero", "console", "cli"],
+    "type": "project",
+    "license": "MIT",
+    "support": {
+        "issues": "https://github.com/configuredco/haulable/issues",
+        "source": "https://github.com/configuredco/haulable"
+    },
+    "authors": [
+        {
+            "name": "Joe Campo",
+            "email": "joe@configured.co"
+        }
+    ],
+    "require": {
+        "php": "^8.0"
+    },
+    "require-dev": {
+        "laravel-zero/framework": "^10.0",
+        "nunomaduro/termwind": "^1.15",
+        "laravel/pint": "^1.5",
+        "mockery/mockery": "^1.5.1",
+        "pestphp/pest": "^1.22.3"
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\": "app/",
+            "Database\\Factories\\": "database/factories/",
+            "Database\\Seeders\\": "database/seeders/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\": "tests/"
+        }
+    },
+    "config": {
+        "preferred-install": "dist",
+        "sort-packages": true,
+        "optimize-autoloader": true,
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true,
+    "bin": ["haulable"]
+}
