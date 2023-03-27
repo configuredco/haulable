@@ -27,9 +27,9 @@ composer global require configured/haulable
 
 ### Usage
 
-To use Haulable, once installed, you can simply run `./haulable your_cli_app.phar`. Haulable will then ask you for what target system(s) you'd like to bundle your CLI app for.
+To use Haulable, once installed, you can simply run `haulable your_cli_app.phar`. Haulable will then ask you for what target system(s) you'd like to bundle your CLI app for.
 
-![image](https://user-images.githubusercontent.com/3619398/228082193-b32031f7-cb9e-441b-a298-3d4f1ea9ca43.png)
+![image](https://user-images.githubusercontent.com/3619398/228088979-4d0e06ab-20c3-4a61-a238-9122735db086.png)
 
 
 ## License
