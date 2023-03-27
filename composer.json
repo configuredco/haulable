@@ -1,5 +1,5 @@
 {
-    "name": "configuredco/haulable",
+    "name": "configured/haulable",
     "description": "Create standalone PHP CLI applications with PHP Micro CLI",
     "keywords": ["framework", "laravel", "laravel zero", "console", "cli"],
     "type": "project",
