@@ -8,14 +8,13 @@
 ![image](https://user-images.githubusercontent.com/3619398/228083152-5758103f-c27b-4d53-a1d5-c3287ee05949.png)
 
 
-
-Haulable is a CLI tool that bundles your existing PHP CLI Phar with [PHP Micro CLI](https://github.com/dixyes/phpmicro). This enables your existing PHP CLI app built with something like [Laravel Zero](https://github.com/laravel-zero/laravel-zero) to be truly portable as the end user will no longer need PHP to be installed to run your application.
+Haulable is a CLI tool that packages your existing PHP CLI Phar with [PHP Micro CLI](https://github.com/dixyes/phpmicro) for MacOS (Apple/Intel), Linux, and Windows. This enables your existing PHP CLI app built with something like [Laravel Zero](https://github.com/laravel-zero/laravel-zero) to be truly portable as the end user will no longer need PHP to be installed to run your application.
 
 
 ### Requirements 
 
-This CLI app only works for MacOS & Linux.
-
+* Haulable currently only runs on MacOS/Linux; however, it will package your CLI for Windows. 
+* Your CLI application must be built using PHP8.0+
 
 ### Installation
 
@@ -27,7 +26,7 @@ composer global require configured/haulable
 
 ### Usage
 
-To use Haulable, once installed, you can simply run `haulable your_cli_app.phar`. Haulable will then ask you for what target system(s) you'd like to bundle your CLI app for.
+To use Haulable, once installed, you can simply run `haulable your_cli_app.phar`. Haulable will then ask you for what target system(s) you'd like to package your CLI app for.
 
 ![image](https://user-images.githubusercontent.com/3619398/228088979-4d0e06ab-20c3-4a61-a238-9122735db086.png)
 
