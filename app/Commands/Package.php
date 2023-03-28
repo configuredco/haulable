@@ -8,17 +8,17 @@ use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Facades\Storage;
 use LaravelZero\Framework\Commands\Command;
 use Symfony\Component\Console\Helper\ProgressBar;
-use function Termwind\{render}; //@codingStandardsIgnoreLine
+use function Termwind\{render};
+
+//@codingStandardsIgnoreLine
 
 class Package extends Command
 {
-    protected $signature = 'package {phar}';
-
-    protected $description = 'Package PHAR with PHP Micro';
-
     protected const STORAGE_URL = 'https://haulable.configured.co/';
-
+    protected $signature = 'package {phar} {--platform=}';
+    protected $description = 'Package PHAR with PHP Micro';
     protected ProgressBar $progress;
+    protected Platform $platform;
 
     public function handle(): void
     {
@@ -30,20 +30,66 @@ class Package extends Command
 
         $this->setupProgress();
         $this->displayIntro();
-
-        $choice = $this->choice('Create for which platform?', array_column(Platform::cases(), 'value'));
-
-        match (Platform::from($choice)) {
+        $this->platform();
+        
+        match ($this->platform) {
             Platform::ALL_PLATFORMS => $this->packageForAllPlatforms(),
-            default => $this->package(Platform::from($choice))
+            default => $this->package($this->platform)
         };
+    }
+
+    private function setupProgress(): void
+    {
+        $this->progress = $this->output->createProgressBar();
+        $this->progress->setFormat('[%bar%] %percent%%');
+    }
+
+    private function displayIntro(): void
+    {
+        $version = app('git.version');
+        //@codingStandardsIgnoreStart
+        render(<<<EOT
+        <div class="ml-2">
+            <div>
+                &nbsp;_&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;_&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;_&nbsp;&nbsp;&nbsp;&nbsp;_&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+                |&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;|&nbsp;&nbsp;|&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+                |&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;__,&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;|&nbsp;&nbsp;__,&nbsp;|&nbsp;|&nbsp;&nbsp;|&nbsp;|&nbsp;&nbsp;_&nbsp;&nbsp;<br>
+                |/&nbsp;\&nbsp;&nbsp;&nbsp;/&nbsp;&nbsp;|&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;|/&nbsp;&nbsp;/&nbsp;&nbsp;|&nbsp;|/&nbsp;\_|/&nbsp;&nbsp;|/&nbsp;&nbsp;<br>
+                |&nbsp;&nbsp;&nbsp;|_/\_/|_/&nbsp;\_/|_/|__/\_/|_/\_/&nbsp;|__/|__/&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+            </div>
+            <div class="px-1 mt-1 bg-green-300 text-black">by ⚙️&nbsp;&nbsp;Configured</div>
+            <div class="px-1 mt-1 bg-blue-300 text-black">{$version}</div>
+            <em class="ml-1">
+                Create portable PHP CLI applications w/ PHP Micro
+            </em>
+        </div>
+    EOT
+        );
+        //@codingStandardsIgnoreEnd
+    }
+
+    private function platform(): void
+    {
+        $choice = $this->option('platform');
+        if (! $choice) {
+            $choice = $this->choice('Create for which platform?', array_column(Platform::cases(), 'value'));
+        }
+
+        $this->platform = Platform::from($choice);
+    }
+
+    private function packageForAllPlatforms(): void
+    {
+        collect(Platform::cases())
+            ->reject(fn(Platform $platform) => $platform->name === 'ALL_PLATFORMS')
+            ->each(fn(Platform $platform) => $this->package($platform));
     }
 
     private function package(Platform $platform, string $phpVersion = null): void
     {
         $sfx = $this->downloadSfx($platform, $phpVersion);
 
-        $dir = getcwd().'/'.str($platform->value)->lower()->replace(['(', ')'], '')->replace(' ', '_')->value;
+        $dir = getcwd() . '/' . str($platform->value)->lower()->replace(['(', ')'], '')->replace(' ', '_')->value;
 
         $buildName = basename($this->argument('phar'));
         $fileExtension = $platform === Platform::WINDOWS ? '.exe' : '';
@@ -65,14 +111,10 @@ class Package extends Command
                     </div>
                 </div>
                 <br>
-            EOT),
+            EOT
+            ),
             default => render('😖 <span class="bg-red-400 text-white px-1">Something unexpected went wrong.</span>')
         };
-    }
-
-    private function packageForAllPlatforms(): void
-    {
-        collect(Platform::cases())->skip(1)->each(fn (Platform $platform) => $this->package($platform));
     }
 
     private function downloadSfx(Platform $platform, string $phpVersion = null): string
@@ -83,7 +125,7 @@ class Package extends Command
             return Storage::path($filename);
         }
 
-        render('💾 Downloading PHP Micro CLI for '.$platform->value);
+        render('💾 Downloading PHP Micro CLI for ' . $platform->value);
 
         $context = stream_context_create([], [
             'notification' => function ($code, $severity, $message, $messageCode, $bytesTransferred, $bytesMax) {
@@ -95,7 +137,7 @@ class Package extends Command
             },
         ]);
 
-        $file = file_get_contents(self::STORAGE_URL.$filename, false, $context);
+        $file = file_get_contents(self::STORAGE_URL . $filename, false, $context);
 
         Storage::put($filename, $file);
 
@@ -125,12 +167,6 @@ class Package extends Command
         };
     }
 
-    private function setupProgress(): void
-    {
-        $this->progress = $this->output->createProgressBar();
-        $this->progress->setFormat('[%bar%] %percent%%');
-    }
-
     private function phpVersion(): string
     {
         return str(phpversion())->beforeLast('.')->value();
@@ -141,28 +177,5 @@ class Package extends Command
         $this->error("The needed PHP Micro version could not be found for your PHP version ({$phpVersion}).");
 
         exit();
-    }
-
-    private function displayIntro(): void
-    {
-        $version = app('git.version');
-        //@codingStandardsIgnoreStart
-        render(<<<EOT
-        <div class="ml-2">
-            <div>
-                &nbsp;_&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;_&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;_&nbsp;&nbsp;&nbsp;&nbsp;_&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
-                |&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;|&nbsp;&nbsp;|&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
-                |&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;__,&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;|&nbsp;&nbsp;__,&nbsp;|&nbsp;|&nbsp;&nbsp;|&nbsp;|&nbsp;&nbsp;_&nbsp;&nbsp;<br>
-                |/&nbsp;\&nbsp;&nbsp;&nbsp;/&nbsp;&nbsp;|&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;|/&nbsp;&nbsp;/&nbsp;&nbsp;|&nbsp;|/&nbsp;\_|/&nbsp;&nbsp;|/&nbsp;&nbsp;<br>
-                |&nbsp;&nbsp;&nbsp;|_/\_/|_/&nbsp;\_/|_/|__/\_/|_/\_/&nbsp;|__/|__/&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-            </div>
-            <div class="px-1 mt-1 bg-green-300 text-black">by ⚙️&nbsp;&nbsp;Configured</div>
-            <div class="px-1 mt-1 bg-blue-300 text-black">{$version}</div>
-            <em class="ml-1">
-                Create portable PHP CLI applications w/ PHP Micro
-            </em>
-        </div>
-    EOT);
-        //@codingStandardsIgnoreEnd
     }
 }
