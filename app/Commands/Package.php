@@ -38,6 +38,7 @@ class Package extends Command
 
         match ($this->platform) {
             Platform::ALL_PLATFORMS => $this->packageForAllPlatforms(),
+            null => $this->error('The specified --platform option is invalid.'),
             default => $this->package($this->platform)
         };
     }
@@ -48,7 +49,7 @@ class Package extends Command
             $choice = $this->choice('Create for which platform?', array_column(Platform::cases(), 'value'));
         }
 
-        $this->platform = Platform::from($choice);
+        $this->platform = Platform::tryFrom($choice);
     }
 
     private function packageForAllPlatforms(): void
