@@ -30,6 +30,21 @@ To use Haulable, once installed, you can simply run `haulable your_cli_app.phar`
 
 ![image](https://user-images.githubusercontent.com/3619398/228088979-4d0e06ab-20c3-4a61-a238-9122735db086.png)
 
+#### Options
+Haulable accepts options and arguments to make it easier to use in CI pipelines
+
+##### Platform
+
+An option can be one of the following:
+* All Platforms
+* MacOS (Intel)
+* MacOS (Apple)
+* Linux (x86_64)
+* Windows (x64)
+
+```bash
+haulable your_cli_app.phar --platform="<option>"
+```
 
 ## License
 Haulable is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
