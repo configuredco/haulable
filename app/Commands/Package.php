@@ -10,8 +10,6 @@ use LaravelZero\Framework\Commands\Command;
 use Symfony\Component\Console\Helper\ProgressBar;
 use function Termwind\{render};
 
-//@codingStandardsIgnoreLine
-
 class Package extends Command
 {
     protected const STORAGE_URL = 'https://haulable.configured.co/';
@@ -31,7 +29,7 @@ class Package extends Command
         $this->setupProgress();
         $this->displayIntro();
         $this->platform();
-        
+
         match ($this->platform) {
             Platform::ALL_PLATFORMS => $this->packageForAllPlatforms(),
             default => $this->package($this->platform)
@@ -46,33 +44,19 @@ class Package extends Command
 
     private function displayIntro(): void
     {
-        $version = app('git.version');
-        //@codingStandardsIgnoreStart
-        render(<<<EOT
-        <div class="ml-2">
-            <div>
-                &nbsp;_&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;_&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;_&nbsp;&nbsp;&nbsp;&nbsp;_&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
-                |&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;|&nbsp;&nbsp;|&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
-                |&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;__,&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;|&nbsp;&nbsp;__,&nbsp;|&nbsp;|&nbsp;&nbsp;|&nbsp;|&nbsp;&nbsp;_&nbsp;&nbsp;<br>
-                |/&nbsp;\&nbsp;&nbsp;&nbsp;/&nbsp;&nbsp;|&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;|/&nbsp;&nbsp;/&nbsp;&nbsp;|&nbsp;|/&nbsp;\_|/&nbsp;&nbsp;|/&nbsp;&nbsp;<br>
-                |&nbsp;&nbsp;&nbsp;|_/\_/|_/&nbsp;\_/|_/|__/\_/|_/\_/&nbsp;|__/|__/&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-            </div>
-            <div class="px-1 mt-1 bg-green-300 text-black">by ⚙️&nbsp;&nbsp;Configured</div>
-            <div class="px-1 mt-1 bg-blue-300 text-black">{$version}</div>
-            <em class="ml-1">
-                Create portable PHP CLI applications w/ PHP Micro
-            </em>
-        </div>
-    EOT
-        );
-        //@codingStandardsIgnoreEnd
+        render(view('intro', [
+            'version' => app('git.version'),
+        ]));
     }
 
     private function platform(): void
     {
         $choice = $this->option('platform');
         if (! $choice) {
-            $choice = $this->choice('Create for which platform?', array_column(Platform::cases(), 'value'));
+            $choice = $this->choice(
+                'Create for which platform?',
+                array_column(Platform::cases(), 'value')
+            );
         }
 
         $this->platform = Platform::from($choice);
@@ -101,19 +85,8 @@ class Package extends Command
         $result = Process::run("cat {$sfx} {$this->argument('phar')} > {$dir}/{$buildName}{$fileExtension}");
 
         match (true) {
-            $result->successful() => render(<<<EOT
-                <div class="space-y-1 mb-1">
-                    <div>
-                        📦 <span class="bg-green-300 text-black px-1">Packaging for {$platform->value} successful.</span>
-                    </div>
-                    <div>
-                        ✅ <a href="{$dir}/{$buildName}{$fileExtension}">{$dir}/{$buildName}{$fileExtension}</a>
-                    </div>
-                </div>
-                <br>
-            EOT
-            ),
-            default => render('😖 <span class="bg-red-400 text-white px-1">Something unexpected went wrong.</span>')
+            $result->successful() => render(view('packaging-successful', compact('platform', 'dir', 'buildName', 'fileExtension'))),
+            default => render(view('error'))
         };
     }
 
