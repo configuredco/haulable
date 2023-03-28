@@ -123,6 +123,8 @@ class Package extends Command
         return match ([$platform, $phpVersion]) {
             [Platform::MACOS_INTEL, '8.0'] => 'micro-cli_8.0_macos_intel.sfx',
             [Platform::MACOS_APPLE, '8.0'] => 'micro-cli_8.0_macos_apple.sfx',
+            [Platform::LINUX, '8.0'] => 'micro-cli_8.0_linux_x86_64.sfx',
+            [Platform::WINDOWS, '8.0'] => 'micro-cli_8.0_windows_x64.sfx',
             [Platform::MACOS_INTEL, '8.1'] => 'micro-cli_8.1_macos_intel.sfx',
             [Platform::MACOS_APPLE, '8.1'] => 'micro-cli_8.1_macos_apple.sfx',
             [Platform::LINUX, '8.1'] => 'micro-cli_8.1_linux_x86_64.sfx',
