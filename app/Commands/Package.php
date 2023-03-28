@@ -8,15 +8,19 @@ use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Facades\Storage;
 use LaravelZero\Framework\Commands\Command;
 use Symfony\Component\Console\Helper\ProgressBar;
-use function Termwind\{render};
+use function Termwind\{render}; //@codingStandardsIgnoreStart
 
 class Package extends Command
 {
-    protected const STORAGE_URL = 'https://haulable.configured.co/';
     protected $signature = 'package {phar} {--platform=}';
+
     protected $description = 'Package PHAR with PHP Micro';
+
+    protected const STORAGE_URL = 'https://haulable.configured.co/';
+
     protected ProgressBar $progress;
-    protected Platform $platform;
+
+    protected ?Platform $platform;
 
     public function handle(): void
     {
@@ -27,8 +31,10 @@ class Package extends Command
         }
 
         $this->setupProgress();
-        $this->displayIntro();
-        $this->platform();
+
+        render(view('intro', ['version' => app('git.version')]));
+
+        $this->determinePlatform();
 
         match ($this->platform) {
             Platform::ALL_PLATFORMS => $this->packageForAllPlatforms(),
@@ -36,27 +42,10 @@ class Package extends Command
         };
     }
 
-    private function setupProgress(): void
+    private function determinePlatform(): void
     {
-        $this->progress = $this->output->createProgressBar();
-        $this->progress->setFormat('[%bar%] %percent%%');
-    }
-
-    private function displayIntro(): void
-    {
-        render(view('intro', [
-            'version' => app('git.version'),
-        ]));
-    }
-
-    private function platform(): void
-    {
-        $choice = $this->option('platform');
-        if (! $choice) {
-            $choice = $this->choice(
-                'Create for which platform?',
-                array_column(Platform::cases(), 'value')
-            );
+        if (! $choice = $this->option('platform')) {
+            $choice = $this->choice('Create for which platform?', array_column(Platform::cases(), 'value'));
         }
 
         $this->platform = Platform::from($choice);
@@ -64,16 +53,14 @@ class Package extends Command
 
     private function packageForAllPlatforms(): void
     {
-        collect(Platform::cases())
-            ->reject(fn(Platform $platform) => $platform->name === 'ALL_PLATFORMS')
-            ->each(fn(Platform $platform) => $this->package($platform));
+        collect(Platform::cases())->skip(1)->each(fn (Platform $platform) => $this->package($platform));
     }
 
     private function package(Platform $platform, string $phpVersion = null): void
     {
         $sfx = $this->downloadSfx($platform, $phpVersion);
 
-        $dir = getcwd() . '/' . str($platform->value)->lower()->replace(['(', ')'], '')->replace(' ', '_')->value;
+        $dir = getcwd().'/'.str($platform->value)->lower()->replace(['(', ')'], '')->replace(' ', '_')->value;
 
         $buildName = basename($this->argument('phar'));
         $fileExtension = $platform === Platform::WINDOWS ? '.exe' : '';
@@ -85,7 +72,14 @@ class Package extends Command
         $result = Process::run("cat {$sfx} {$this->argument('phar')} > {$dir}/{$buildName}{$fileExtension}");
 
         match (true) {
-            $result->successful() => render(view('packaging-successful', compact('platform', 'dir', 'buildName', 'fileExtension'))),
+            $result->successful() => render(
+                view('packaging-successful', [
+                    'platform' => $platform,
+                    'dir' => $dir,
+                    'buildName' => $buildName,
+                    'fileExtension' => $fileExtension,
+                ])
+            ),
             default => render(view('error'))
         };
     }
@@ -98,7 +92,7 @@ class Package extends Command
             return Storage::path($filename);
         }
 
-        render('💾 Downloading PHP Micro CLI for ' . $platform->value);
+        render('💾 Downloading PHP Micro CLI for '.$platform->value);
 
         $context = stream_context_create([], [
             'notification' => function ($code, $severity, $message, $messageCode, $bytesTransferred, $bytesMax) {
@@ -110,7 +104,7 @@ class Package extends Command
             },
         ]);
 
-        $file = file_get_contents(self::STORAGE_URL . $filename, false, $context);
+        $file = file_get_contents(self::STORAGE_URL.$filename, false, $context);
 
         Storage::put($filename, $file);
 
@@ -143,6 +137,12 @@ class Package extends Command
     private function phpVersion(): string
     {
         return str(phpversion())->beforeLast('.')->value();
+    }
+
+    private function setupProgress(): void
+    {
+        $this->progress = $this->output->createProgressBar();
+        $this->progress->setFormat('[%bar%] %percent%%');
     }
 
     private function throwInvalidPhpVersion(string $phpVersion): void

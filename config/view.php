@@ -5,5 +5,5 @@ return [
         resource_path('views'),
     ],
 
-    'compiled' => sys_get_temp_dir() . '/haulable',
+    'compiled' => sys_get_temp_dir().'/haulable',
 ];
