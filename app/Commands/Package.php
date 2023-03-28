@@ -8,17 +8,19 @@ use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Facades\Storage;
 use LaravelZero\Framework\Commands\Command;
 use Symfony\Component\Console\Helper\ProgressBar;
-use function Termwind\{render}; //@codingStandardsIgnoreLine
+use function Termwind\{render}; //@codingStandardsIgnoreStart
 
 class Package extends Command
 {
-    protected $signature = 'package {phar}';
+    protected $signature = 'package {phar} {--platform=}';
 
     protected $description = 'Package PHAR with PHP Micro';
 
     protected const STORAGE_URL = 'https://haulable.configured.co/';
 
     protected ProgressBar $progress;
+
+    protected ?Platform $platform;
 
     public function handle(): void
     {
@@ -29,14 +31,30 @@ class Package extends Command
         }
 
         $this->setupProgress();
-        $this->displayIntro();
 
-        $choice = $this->choice('Create for which platform?', array_column(Platform::cases(), 'value'));
+        render(view('intro', ['version' => app('git.version')]));
 
-        match (Platform::from($choice)) {
+        $this->determinePlatform();
+
+        match ($this->platform) {
             Platform::ALL_PLATFORMS => $this->packageForAllPlatforms(),
-            default => $this->package(Platform::from($choice))
+            null => $this->error('The specified --platform option is invalid.'),
+            default => $this->package($this->platform)
         };
+    }
+
+    private function determinePlatform(): void
+    {
+        if (! $choice = $this->option('platform')) {
+            $choice = $this->choice('Create for which platform?', array_column(Platform::cases(), 'value'));
+        }
+
+        $this->platform = Platform::tryFrom($choice);
+    }
+
+    private function packageForAllPlatforms(): void
+    {
+        collect(Platform::cases())->skip(1)->each(fn (Platform $platform) => $this->package($platform));
     }
 
     private function package(Platform $platform, string $phpVersion = null): void
@@ -55,24 +73,16 @@ class Package extends Command
         $result = Process::run("cat {$sfx} {$this->argument('phar')} > {$dir}/{$buildName}{$fileExtension}");
 
         match (true) {
-            $result->successful() => render(<<<EOT
-                <div class="space-y-1 mb-1">
-                    <div>
-                        📦 <span class="bg-green-300 text-black px-1">Packaging for {$platform->value} successful.</span>
-                    </div>
-                    <div>
-                        ✅ <a href="{$dir}/{$buildName}{$fileExtension}">{$dir}/{$buildName}{$fileExtension}</a>
-                    </div>
-                </div>
-                <br>
-            EOT),
-            default => render('😖 <span class="bg-red-400 text-white px-1">Something unexpected went wrong.</span>')
+            $result->successful() => render(
+                view('packaging-successful', [
+                    'platform' => $platform,
+                    'dir' => $dir,
+                    'buildName' => $buildName,
+                    'fileExtension' => $fileExtension,
+                ])
+            ),
+            default => render(view('error'))
         };
-    }
-
-    private function packageForAllPlatforms(): void
-    {
-        collect(Platform::cases())->skip(1)->each(fn (Platform $platform) => $this->package($platform));
     }
 
     private function downloadSfx(Platform $platform, string $phpVersion = null): string
@@ -125,15 +135,15 @@ class Package extends Command
         };
     }
 
+    private function phpVersion(): string
+    {
+        return str(phpversion())->beforeLast('.')->value();
+    }
+
     private function setupProgress(): void
     {
         $this->progress = $this->output->createProgressBar();
         $this->progress->setFormat('[%bar%] %percent%%');
-    }
-
-    private function phpVersion(): string
-    {
-        return str(phpversion())->beforeLast('.')->value();
     }
 
     private function throwInvalidPhpVersion(string $phpVersion): void
@@ -141,28 +151,5 @@ class Package extends Command
         $this->error("The needed PHP Micro version could not be found for your PHP version ({$phpVersion}).");
 
         exit();
-    }
-
-    private function displayIntro(): void
-    {
-        $version = app('git.version');
-        //@codingStandardsIgnoreStart
-        render(<<<EOT
-        <div class="ml-2">
-            <div>
-                &nbsp;_&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;_&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;_&nbsp;&nbsp;&nbsp;&nbsp;_&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
-                |&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;|&nbsp;&nbsp;|&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
-                |&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;__,&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;|&nbsp;&nbsp;__,&nbsp;|&nbsp;|&nbsp;&nbsp;|&nbsp;|&nbsp;&nbsp;_&nbsp;&nbsp;<br>
-                |/&nbsp;\&nbsp;&nbsp;&nbsp;/&nbsp;&nbsp;|&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;|/&nbsp;&nbsp;/&nbsp;&nbsp;|&nbsp;|/&nbsp;\_|/&nbsp;&nbsp;|/&nbsp;&nbsp;<br>
-                |&nbsp;&nbsp;&nbsp;|_/\_/|_/&nbsp;\_/|_/|__/\_/|_/\_/&nbsp;|__/|__/&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-            </div>
-            <div class="px-1 mt-1 bg-green-300 text-black">by ⚙️&nbsp;&nbsp;Configured</div>
-            <div class="px-1 mt-1 bg-blue-300 text-black">{$version}</div>
-            <em class="ml-1">
-                Create portable PHP CLI applications w/ PHP Micro
-            </em>
-        </div>
-    EOT);
-        //@codingStandardsIgnoreEnd
     }
 }
