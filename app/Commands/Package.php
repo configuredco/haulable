@@ -12,7 +12,7 @@ use function Termwind\{render}; //@codingStandardsIgnoreStart
 
 class Package extends Command
 {
-    protected $signature = 'package {phar} {--platform=}';
+    protected $signature = 'package {phar} {--platform=} {--php=}';
 
     protected $description = 'Package PHAR with PHP Micro';
 
@@ -139,7 +139,7 @@ class Package extends Command
 
     private function phpVersion(): string
     {
-        return str(phpversion())->beforeLast('.')->value();
+        return $this->option('php') ?? str(phpversion())->beforeLast('.')->value();
     }
 
     private function setupProgress(): void
