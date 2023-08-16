@@ -6,4 +6,5 @@
 macos_intel
 macos_apple
 linux_x86_64
+linux_aarch64
 windows_x64

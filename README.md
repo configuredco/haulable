@@ -40,6 +40,7 @@ An option can be one of the following:
 * MacOS (Intel)
 * MacOS (Apple)
 * Linux (x86_64)
+* Linux (aarch64)
 * Windows (x64)
 
 ```bash

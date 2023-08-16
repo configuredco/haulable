@@ -124,14 +124,17 @@ class Package extends Command
             [Platform::MACOS_INTEL, '8.0'] => 'micro-cli_8.0_macos_intel.sfx',
             [Platform::MACOS_APPLE, '8.0'] => 'micro-cli_8.0_macos_apple.sfx',
             [Platform::LINUX, '8.0'] => 'micro-cli_8.0_linux_x86_64.sfx',
+            [Platform::LINUX_ARM, '8.0'] => 'micro-cli_8.0_linux_aarch64.sfx',
             [Platform::WINDOWS, '8.0'] => 'micro-cli_8.0_windows_x64.sfx',
             [Platform::MACOS_INTEL, '8.1'] => 'micro-cli_8.1_macos_intel.sfx',
             [Platform::MACOS_APPLE, '8.1'] => 'micro-cli_8.1_macos_apple.sfx',
             [Platform::LINUX, '8.1'] => 'micro-cli_8.1_linux_x86_64.sfx',
+            [Platform::LINUX_ARM, '8.1'] => 'micro-cli_8.1_linux_aarch64.sfx',
             [Platform::WINDOWS, '8.1'] => 'micro-cli_8.1_windows_x64.sfx',
             [Platform::MACOS_INTEL, '8.2'] => 'micro-cli_8.2_macos_intel.sfx',
             [Platform::MACOS_APPLE, '8.2'] => 'micro-cli_8.2_macos_apple.sfx',
             [Platform::LINUX, '8.2'] => 'micro-cli_8.2_linux_x86_64.sfx',
+            [Platform::LINUX_ARM, '8.2'] => 'micro-cli_8.2_linux_aarch64.sfx',
             [Platform::WINDOWS, '8.2'] => 'micro-cli_8.2_windows_x64.sfx',
             default => $this->throwInvalidPhpVersion($phpVersion)
         };
